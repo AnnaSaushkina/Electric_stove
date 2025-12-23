@@ -1,50 +1,70 @@
-class Burner {
-    constructor(name) {
-        this.name = name;       // "Левая передняя", "Правая задняя" и т.д.
-        this.isOn = false;      // включена ли конфорка
-        this.power = 0;         // текущая мощность (0-10)
-        this.maxPower = 10;     // максимальная мощность
-    }
-
-    // Включить конфорку
-    turnOn(powerLevel = 5) {
-        if (powerLevel < 0 || powerLevel > this.maxPower) {
-            console.log(`Ошибка: мощность должна быть от 0 до ${this.maxPower}`);
-            return;
-        }
-        this.isOn = true;
-        this.power = powerLevel;
-        console.log(`${this.name} включена на мощность ${this.power}`);
-    }
-
-    // Выключить конфорку
-    turnOff() {
-        this.isOn = false;
-        this.power = 0;
-        console.log(`${this.name} выключена`);
-    }
-
-    // Изменить мощность (если конфорка включена)
-    setPower(newPower) {
-        if (!this.isOn) {
-            console.log(`Сначала включите ${this.name}`);
-            return;
-        }
-        if (newPower < 0 || newPower > this.maxPower) {
-            console.log(`Ошибка: мощность должна быть от 0 до ${this.maxPower}`);
-            return;
-        }
-        this.power = newPower;
-        console.log(`${this.name}: мощность изменена на ${this.power}`);
-    }
-
-    // Получить текущую мощность в ваттах (просто умножаем на 1000)
-    getPowerInWatts() {
-        return this.power * 1000;
-    }
-
-    // Простой метод для вывода состояния
-    getStatus() {
-        return `${this.name}: ${this.isOn ? 'ВКЛ' : 'ВЫКЛ'} (${this.power}/10)`;
-    }
+// Конфорка
+function createBurner(name) {
+    return { name, isOn: false, power: 0 };
 }
+
+function burnerOn(burner, power = 5) {
+    if (power < 0 || power > 10) return;
+    burner.isOn = true;
+    burner.power = power;
+    console.log(`${burner.name}: включена на ${power}`);
+}
+
+function burnerOff(burner) {
+    burner.isOn = false;
+    burner.power = 0;
+    console.log(`${burner.name}: выключена`);
+}
+
+function changePower(burner, newPower) {
+    if (!burner.isOn || newPower < 0 || newPower > 10) return;
+    burner.power = newPower;
+    console.log(`${burner.name}: мощность ${newPower}`);
+}
+
+// Плита
+function createStove() {
+    return {
+        isOn: false,
+        burners: {
+            leftFront: createBurner('Левая передняя'),
+            rightFront: createBurner('Правая передняя'),
+            leftBack: createBurner('Левая задняя'),
+            rightBack: createBurner('Правая задняя')
+        }
+    };
+}
+
+function stoveOn(stove) {
+    stove.isOn = true;
+    console.log('Плита включена');
+}
+
+function stoveOff(stove) {
+    stove.isOn = false;
+    for (const key in stove.burners) {
+        if (stove.burners[key].isOn) burnerOff(stove.burners[key]);
+    }
+    console.log('Плита выключена');
+}
+
+function stoveBurnerOn(stove, burnerName, power) {
+    if (!stove.isOn || !stove.burners[burnerName]) return;
+    burnerOn(stove.burners[burnerName], power);
+}
+
+// Проверки
+const stove = createStove();
+
+stoveOn(stove);
+stoveBurnerOn(stove, 'leftFront', 7);
+stoveBurnerOn(stove, 'rightBack', 3);
+
+console.log('Состояние:');
+console.log(`Плита: ${stove.isOn ? 'вкл' : 'выкл'}`);
+for (const key in stove.burners) {
+    const status = stove.burners[key];
+    console.log(`${status.name}: ${status.isOn ? `вкл (${status.power})` : 'выкл'}`);
+}
+
+stoveOff(stove);

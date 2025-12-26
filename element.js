@@ -1,31 +1,46 @@
-// Конфорка
+// --- Статусы комфорки
 function createBurner(name) {
-    return { name, isOn: false, power: 0 };
+    return {
+        name,
+        power: 0,
+        isOn: false,
+        isOverheated: false
+    };
 }
 
-function burnerOn(burner, power = 5) {
+// Функция регулировки мощности
+function setBurnerPower(burner, power) {
     if (power < 0 || power > 10) return;
-    burner.isOn = true;
+
     burner.power = power;
-    console.log(`${burner.name}: включена на ${power}`);
+    console.log(`${burner.name}: мощность ${power}`);
+
+    if (power > 0) {
+        burnerOn(burner);
+    } else {
+        burnerOff(burner);
+    }
 }
 
+// Включение комфорки
+function burnerOn(burner) {
+    // Защита от перегрева
+    if (burner.isOverheated) return;
+
+    burner.isOn = true;
+    console.log(`${burner.name}: включена`);
+}
+
+// Выключение конфорки
 function burnerOff(burner) {
     burner.isOn = false;
-    burner.power = 0;
     console.log(`${burner.name}: выключена`);
 }
 
-function changePower(burner, newPower) {
-    if (!burner.isOn || newPower < 0 || newPower > 10) return;
-    burner.power = newPower;
-    console.log(`${burner.name}: мощность ${newPower}`);
-}
-
-// Плита
+// --- создание плиты
 function createStove() {
     return {
-        isOn: false,
+        isPowered: false,
         burners: {
             leftFront: createBurner('Левая передняя'),
             rightFront: createBurner('Правая передняя'),
@@ -35,36 +50,120 @@ function createStove() {
     };
 }
 
-function stoveOn(stove) {
-    stove.isOn = true;
-    console.log('Плита включена');
+// Включение плиты (в розетку)
+function stovePowerOn(stove) {
+    stove.isPowered = true;
+    console.log('Плита включена в розетку');
 }
 
-function stoveOff(stove) {
-    stove.isOn = false;
+// Выключение плиты
+function stovePowerOff(stove) {
+    stove.isPowered = false;
+
+    // Выключаем все конфорки
     for (const key in stove.burners) {
-        if (stove.burners[key].isOn) burnerOff(stove.burners[key]);
+        burnerOff(stove.burners[key]);
     }
-    console.log('Плита выключена');
+
+    console.log('Плита выключена из розетки');
 }
 
+// Включение конфорки на плите
 function stoveBurnerOn(stove, burnerName, power) {
-    if (!stove.isOn || !stove.burners[burnerName]) return;
-    burnerOn(stove.burners[burnerName], power);
+    // Нельзя включать конфорку если плита не включена
+    if (!stove.isPowered) {
+        console.log('Нужно включить в розетка');
+        return;
+    }
+
+    if (!stove.burners[burnerName]) return;
+
+    setBurnerPower(stove.burners[burnerName], power);
 }
 
-// Проверки
+
+// Логи статуса
+let logInterval = null;
+
+function startLogging(stove) {
+    if (!stove.isPowered) return;
+
+    console.log('-- лог');
+
+    logInterval = setInterval(() => {
+        if (!stove.isPowered) {
+            stopLogging();
+            return;
+        }
+
+        console.log(`Плита: ${stove.isPowered ? 'вкл' : 'выкл'}`);
+
+        for (const key in stove.burners) {
+            const b = stove.burners[key];
+            console.log(`${b.name}: ${b.isOn ? `вкл (${b.power})` : 'выкл'}`);
+        }
+    }, 5000);
+}
+
+function stopLogging() {
+    if (logInterval) {
+        clearInterval(logInterval);
+        console.log('-- стоп лога');
+    }
+}
+
+// функция проверки высокой температуры и защиты от перегрева
+function checkOverheat(stove) {
+    for (const key in stove.burners) {
+        const burner = stove.burners[key];
+
+        // Если конфорка включена на макс
+        if (burner.isOn && burner.power === 10 && !burner.isOverheated) {
+            console.log(`${burner.name}: риск перегрева`);
+
+
+            setTimeout(() => {
+                burner.isOverheated = true;
+                burnerOff(burner);
+                console.log(`${burner.name}: перегрев`);
+
+                // Срабатывает остываение
+                setTimeout(() => {
+                    burner.isOverheated = false;
+                    console.log(`${burner.name}: остыла`);
+
+                    // Если плита включена, и мощность конфорки задана, то включаем ее снова
+                    if (stove.isPowered && burner.power > 0) {
+                        console.log(`${burner.name}: повторное включение`);
+                        burnerOn(burner);
+                    }
+                }, 2000);
+            }, 3000);
+        }
+    }
+}
+
+// проверка работы
 const stove = createStove();
 
-stoveOn(stove);
+
+console.log('--- Включение комфорки без  без включения плиты---');
 stoveBurnerOn(stove, 'leftFront', 7);
-stoveBurnerOn(stove, 'rightBack', 3);
 
-console.log('Состояние:');
-console.log(`Плита: ${stove.isOn ? 'вкл' : 'выкл'}`);
-for (const key in stove.burners) {
-    const status = stove.burners[key];
-    console.log(`${status.name}: ${status.isOn ? `вкл (${status.power})` : 'выкл'}`);
-}
 
-stoveOff(stove);
+console.log('--- Включение плиты');
+stovePowerOn(stove);
+
+startLogging(stove);
+
+console.log('--- Включаем разные комфорки, в тч с перегревом');
+stoveBurnerOn(stove, 'leftFront', 7);
+stoveBurnerOn(stove, 'rightBack', 10);
+
+// Проверка перегрева
+checkOverheat(stove);
+
+setTimeout(() => {
+    console.log('--Выключаем плиту');
+    stovePowerOff(stove);
+}, 10000);

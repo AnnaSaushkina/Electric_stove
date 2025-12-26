@@ -1,4 +1,4 @@
-// --- Статусы комфорки
+// --- Состояние комфорки
 function createBurner(name) {
     return {
         name,
@@ -60,7 +60,7 @@ function stovePowerOn(stove) {
 function stovePowerOff(stove) {
     stove.isPowered = false;
 
-    // Выключаем все конфорки
+    // Для каждой конфорки выключается вся плита
     for (const key in stove.burners) {
         burnerOff(stove.burners[key]);
     }
@@ -70,9 +70,9 @@ function stovePowerOff(stove) {
 
 // Включение конфорки на плите
 function stoveBurnerOn(stove, burnerName, power) {
-    // Нельзя включать конфорку если плита не включена
+    // Если плита е включена то комфорка не включается тоже
     if (!stove.isPowered) {
-        console.log('Нужно включить в розетка');
+        console.log('Нужно включить в розетку');
         return;
     }
 
@@ -83,14 +83,14 @@ function stoveBurnerOn(stove, burnerName, power) {
 
 
 // Логи статуса
-let logInterval = null;
+let log = null;
 
 function startLogging(stove) {
     if (!stove.isPowered) return;
 
     console.log('-- лог');
 
-    logInterval = setInterval(() => {
+    log = setInterval(() => {
         if (!stove.isPowered) {
             stopLogging();
             return;
@@ -106,8 +106,8 @@ function startLogging(stove) {
 }
 
 function stopLogging() {
-    if (logInterval) {
-        clearInterval(logInterval);
+    if (log) {
+        clearInterval(log);
         console.log('-- стоп лога');
     }
 }
@@ -130,9 +130,9 @@ function checkOverheat(stove) {
                 // Срабатывает остываение
                 setTimeout(() => {
                     burner.isOverheated = false;
-                    console.log(`${burner.name}: остыла`);
+                    console.log(`${burner.name}: остывает`);
 
-                    // Если плита включена, и мощность конфорки задана, то включаем ее снова
+                    // Если плита включена, и мощность комфорки была задана, то включаем ее снова
                     if (stove.isPowered && burner.power > 0) {
                         console.log(`${burner.name}: повторное включение`);
                         burnerOn(burner);
